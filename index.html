@@ -302,10 +302,10 @@
 <script>
 // ===================== تنظیمات کلینیک (این بخش را قبل از انتشار ویرایش کنید) =====================
 const CONFIG = {
-  clinicName: "شنوایی سنجی وسمعک تبریز",
-  whatsappNumber: "989144880537",
-  googleSheetUrl: "https://script.google.com/macros/s/AKfycbyFu8UNO42DwTf7cYOpES85I6_CNjBUM-LOKkGun54uTRZF4MVFzfmT3yZJh5WWciSA3Q/exec",
-  phoneNumber: "+989144880537"
+  clinicName: "شنوایی سنجی و سمعک تبریز",
+  whatsappNumber: "989144880537",   // شماره واتساپ کلینیک، با کد کشور و بدون + یا صفر اول
+  phoneNumber: "+989144880537",     // شماره تماس مستقیم کلینیک
+  googleSheetUrl: "https://script.google.com/macros/s/AKfycbyFu8UNO42DwTf7cYOpES85I6_CNjBUM-LOKkGun54uTRZF4MVFzfmT3yZJh5WWciSA3Q/exec" // لینک Web App که از Google Apps Script می‌گیرید (مرحله بعد توضیح داده شده)
 };
 // ====================================================================================================
 
@@ -468,6 +468,26 @@ function buildWhatsAppMessage(){
   return lines.join('\n');
 }
 
+function sendToSheet(){
+  if(!CONFIG.googleSheetUrl || CONFIG.googleSheetUrl.indexOf('PASTE_') === 0) return;
+  const tier = TIER_CONTENT[state.mode][getTier()];
+  const payload = {
+    mode: state.mode === 'adult' ? 'بزرگسال' : 'کودک',
+    name: state.lead.name,
+    phone: state.lead.phone,
+    score: totalScore(),
+    maxScore: MAX_SCORE[state.mode],
+    tier: tier.badge,
+    childFlag: childFlagged() ? 'بله' : 'خیر'
+  };
+  fetch(CONFIG.googleSheetUrl, {
+    method: 'POST',
+    mode: 'no-cors',
+    headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+    body: JSON.stringify(payload)
+  }).catch(()=>{ /* خطای شبکه را نادیده می‌گیریم تا تجربه کاربر مختل نشود */ });
+}
+
 // ---------- رندر بخش‌ها ----------
 function render(){
   renderAudiogram();
@@ -544,7 +564,7 @@ function renderLead(){
   consentInput.addEventListener('change', validate);
 
   document.getElementById('prevBtn').addEventListener('click', goPrev);
-  submitBtn.addEventListener('click', ()=>{ state.screen = 'result'; render(); });
+  submitBtn.addEventListener('click', ()=>{ sendToSheet(); state.screen = 'result'; render(); });
 }
 
 function renderResult(){
